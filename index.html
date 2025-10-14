@@ -1,0 +1,500 @@
+<!doctype html>
+<html lang="hi">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Dice of Fate — 3 Player Party Game</title>
+  <style>
+    :root{
+      --accent: #ffcf33;
+      --muted: rgba(255,255,255,0.85);
+      --card-bg: rgba(0,0,0,0.45);
+      --glass: rgba(255,255,255,0.06);
+      --soft-shadow: 0 6px 18px rgba(0,0,0,0.35);
+      font-family: "Segoe UI", Roboto, "Helvetica Neue", Arial;
+    }
+    html,body{
+      height:100%;
+      margin:0;
+      padding:0;
+      background: url("https://media.tenor.com/oRXFtutqtK4AAAAM/corgi-cute.gif") center/cover no-repeat fixed;
+      color:var(--muted);
+      -webkit-font-smoothing:antialiased;
+      -moz-osx-font-smoothing:grayscale;
+    }
+
+    /* dim overlay for readability */
+    .overlay{
+      position:fixed;
+      inset:0;
+      background: linear-gradient(180deg, rgba(0,0,0,0.35), rgba(0,0,0,0.55));
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      padding:20px;
+    }
+
+    .board{
+      width:100%;
+      max-width:980px;
+      background:var(--card-bg);
+      border-radius:16px;
+      box-shadow:var(--soft-shadow);
+      padding:18px;
+      display:grid;
+      grid-template-columns: 1fr 360px;
+      gap:18px;
+      backdrop-filter: blur(6px) saturate(120%);
+      border: 1px solid rgba(255,255,255,0.06);
+    }
+
+    .left {
+      padding:12px;
+      display:flex;
+      flex-direction:column;
+      gap:12px;
+    }
+
+    .title{
+      display:flex;
+      align-items:center;
+      gap:12px;
+    }
+    .title h1{
+      margin:0;
+      font-size:24px;
+      letter-spacing:0.4px;
+    }
+    .subtitle{ font-size:13px; color:rgba(255,255,255,0.75); margin-top:4px; }
+
+    .players {
+      display:flex;
+      gap:12px;
+      justify-content:space-between;
+    }
+
+    .player-card{
+      flex:1;
+      background:var(--glass);
+      border-radius:12px;
+      padding:10px;
+      text-align:center;
+      box-shadow: 0 6px 12px rgba(0,0,0,0.45) inset;
+    }
+    .player-card input{
+      width:100%;
+      border:none;
+      background:transparent;
+      color:var(--muted);
+      text-align:center;
+      font-size:18px;
+      outline:none;
+    }
+    .player-name { font-size:18px; margin-bottom:6px; }
+    .player-turn { font-size:12px; color:var(--accent); font-weight:700; }
+
+    .center-area{
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      gap:14px;
+      padding:14px;
+    }
+
+    /* Dice */
+    .dice-wrap{
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      flex-direction:column;
+      gap:10px;
+    }
+    .dice {
+      width:140px;
+      height:140px;
+      border-radius:18px;
+      background:linear-gradient(180deg,#ffffff11,#00000022);
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      font-size:48px;
+      font-weight:800;
+      color:var(--muted);
+      user-select:none;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+      transform-style:preserve-3d;
+      transition:transform 900ms cubic-bezier(.2,.9,.2,1);
+    }
+    .dice.rolling {
+      animation: rollAnim 0.9s linear;
+    }
+    @keyframes rollAnim {
+      0% { transform: rotateX(0) rotateY(0) scale(1); }
+      25% { transform: rotateX(720deg) rotateY(540deg) scale(1.05); }
+      50% { transform: rotateX(1260deg) rotateY(1080deg) scale(0.98); }
+      75% { transform: rotateX(1800deg) rotateY(1620deg) scale(1.03); }
+      100% { transform: rotateX(2160deg) rotateY(1980deg) scale(1); }
+    }
+
+    .controls{
+      display:flex;
+      gap:8px;
+      align-items:center;
+      justify-content:center;
+    }
+    button{
+      padding:10px 14px;
+      border-radius:10px;
+      border:0;
+      cursor:pointer;
+      font-weight:700;
+      letter-spacing:0.3px;
+      box-shadow: 0 6px 18px rgba(0,0,0,0.35);
+      background: linear-gradient(180deg,#222,#111);
+      color:var(--muted);
+    }
+    button.primary{
+      background: linear-gradient(180deg,#ffcf33,#ffb200);
+      color:#111;
+    }
+    button.ghost{
+      background:transparent;
+      border:1px solid rgba(255,255,255,0.08);
+    }
+
+    .right {
+      padding:12px;
+      display:flex;
+      flex-direction:column;
+      gap:12px;
+    }
+
+    .task-card{
+      background: linear-gradient(180deg, rgba(255,255,255,0.03), rgba(255,255,255,0.02));
+      border-radius:12px;
+      padding:12px;
+      min-height:140px;
+      display:flex;
+      flex-direction:column;
+      gap:8px;
+      justify-content:center;
+      align-items:center;
+      text-align:center;
+    }
+    .task-card h2{ margin:0; font-size:20px; }
+    .task{ font-size:16px; color:var(--muted); }
+
+    .scoreboard{
+      display:flex;
+      gap:8px;
+      justify-content:space-between;
+    }
+    .score{
+      flex:1;
+      background:rgba(0,0,0,0.25);
+      border-radius:8px;
+      padding:8px;
+      text-align:center;
+    }
+    .small { font-size:12px; color:rgba(255,255,255,0.6); }
+
+    footer { font-size:12px; color:rgba(255,255,255,0.55); text-align:center; margin-top:8px; }
+
+    @media (max-width:880px){
+      .board{ grid-template-columns: 1fr; }
+      .players{ flex-direction:column; }
+      .center-area{ flex-direction:column; }
+      .dice { width:110px; height:110px; font-size:40px; }
+    }
+  </style>
+</head>
+<body>
+  <div class="overlay">
+    <div class="board" role="application" aria-label="Dice of Fate game">
+      <div class="left">
+        <div class="title">
+          <div>
+            <h1>Dice of Fate</h1>
+            <div class="subtitle">3 Players • One Screen • Fun Challenges</div>
+          </div>
+        </div>
+
+        <div class="players" aria-hidden="false">
+          <div class="player-card" id="p0-card">
+            <div class="player-name"><input id="p0-name" value="JIYA💗" maxlength="14" /></div>
+            <div class="player-turn" id="p0-turn">—</div>
+          </div>
+
+          <div class="player-card" id="p1-card">
+            <div class="player-name"><input id="p1-name" value="PAVAN💗" maxlength="14" /></div>
+            <div class="player-turn" id="p1-turn">—</div>
+          </div>
+
+          <div class="player-card" id="p2-card">
+            <div class="player-name"><input id="p2-name" value="ANNU💗" maxlength="14" /></div>
+            <div class="player-turn" id="p2-turn">—</div>
+          </div>
+        </div>
+
+        <div class="center-area">
+          <div class="dice-wrap" aria-live="polite">
+            <div class="dice" id="dice">—</div>
+            <div class="controls">
+              <button class="primary" id="rollBtn" aria-label="Roll dice">Roll Dice</button>
+              <button class="ghost" id="nextBtn" aria-label="Next player">Next Turn</button>
+            </div>
+            <div style="margin-top:6px;font-size:13px;color:rgba(255,255,255,0.7);">Current turn: <strong id="currentPlayerLabel">Player 1</strong></div>
+          </div>
+        </div>
+
+        <div style="margin-top:6px;">
+          <div class="small">Tip: Press SPACE to roll. Edit player names before starting.</div>
+        </div>
+
+      </div>
+
+      <div class="right">
+        <div class="task-card" id="taskCard" aria-live="polite">
+          <h2 id="taskTitle">Welcome!</h2>
+          <div class="task" id="taskText">Press <strong>Roll Dice</strong> to begin. Each dice number has a special action.</div>
+        </div>
+
+        <div class="scoreboard" role="region" aria-label="Scoreboard">
+          <div class="score">
+            <div class="small">Score</div>
+            <div id="score0">0</div>
+            <div class="small" id="nameScore0">Player 1</div>
+          </div>
+          <div class="score">
+            <div class="small">Score</div>
+            <div id="score1">0</div>
+            <div class="small" id="nameScore1">Player 2</div>
+          </div>
+          <div class="score">
+            <div class="small">Score</div>
+            <div id="score2">0</div>
+            <div class="small" id="nameScore2">Player 3</div>
+          </div>
+        </div>
+
+        <footer>
+          <br/>
+          
+        </footer>
+      </div>
+    </div>
+  </div>
+
+<script>
+/*
+  Dice of Fate — Single-file implementation
+  Features:
+  - 3 players on one screen
+  - Dice animation and random number 1..6
+  - Actions mapped to numbers (1..6)
+  - Speech output that starts with "Jee"
+  - Automatic turn rotation
+  - Simple scoreboard (award point on successful completion via "Add Point")
+*/
+
+const rollBtn = document.getElementById('rollBtn');
+const nextBtn = document.getElementById('nextBtn');
+const diceEl = document.getElementById('dice');
+const taskTitle = document.getElementById('taskTitle');
+const taskText = document.getElementById('taskText');
+const currentPlayerLabel = document.getElementById('currentPlayerLabel');
+
+const nameInputs = [
+  document.getElementById('p0-name'),
+  document.getElementById('p1-name'),
+  document.getElementById('p2-name')
+];
+
+const scoreEls = [document.getElementById('score0'), document.getElementById('score1'), document.getElementById('score2')];
+const nameScoreEls = [document.getElementById('nameScore0'), document.getElementById('nameScore1'), document.getElementById('nameScore2')];
+
+let scores = [0,0,0];
+let currentPlayer = 0;
+let rolling = false;
+
+// Action mapping
+const actions = {
+  1: { title: "Truth ❓", text: [
+    "Which secret talent are you hiding?",
+    "Ever lied to get out of trouble? Tell us.",
+    "What was the most embarrassing thing you did this year?"
+  ] },
+  2: { title: "Dare 💪", text: [
+    "Do 10 jumping jacks right now!",
+    "Speak in a funny voice for 20 seconds.",
+    "Act like a chicken for 10 seconds."
+  ] },
+  3: { title: "Sing 🎤", text: [
+    "Sing the chorus of your favorite song.",
+    "Hum a tune and others guess the song.",
+    "Sing the alphabet backwards (try!)."
+  ] },
+  4: { title: "Dance 💃", text: [
+    "Dance like a robot for 10 seconds.",
+    "Do a silly dance move and freeze.",
+    "Show your best celebration dance!"
+  ] },
+  5: { title: "Compliment 😊", text: [
+    "Give a genuine compliment to another player.",
+    "Tell someone why they're awesome.",
+    "Say one thing you appreciate about the person to your left."
+  ] },
+  6: { title: "Funny Q 😂", text: [
+    "If you were a sandwich, what would you be and why?",
+    "What's the weirdest dream you've had?",
+    "If animals could talk, which would be the rudest?"
+  ] }
+};
+
+// utility: pick random element
+function pick(arr){ return arr[Math.floor(Math.random()*arr.length)]; }
+
+// update UI names
+function updateNames(){
+  for(let i=0;i<3;i++){
+    nameScoreEls[i].textContent = nameInputs[i].value || `Player ${i+1}`;
+  }
+  currentPlayerLabel.textContent = nameInputs[currentPlayer].value || `Player ${currentPlayer+1}`;
+}
+
+// start with names
+updateNames();
+
+nameInputs.forEach((inp, idx) => {
+  inp.addEventListener('input', () => {
+    updateNames();
+    document.getElementById(`p${idx}-turn`).textContent = (idx === currentPlayer) ? 'Your turn' : '—';
+  });
+});
+
+// keyboard: space to roll, n for next
+window.addEventListener('keydown', (e)=>{
+  if(e.code === 'Space'){ e.preventDefault(); triggerRoll(); }
+  if(e.key.toLowerCase() === 'n'){ triggerNext(); }
+});
+
+// set initial turn indicator
+function refreshTurnIndicators(){
+  for(let i=0;i<3;i++){
+    document.getElementById(`p${i}-turn`).textContent = (i === currentPlayer) ? 'Your turn' : '—';
+  }
+  updateNames();
+}
+refreshTurnIndicators();
+
+function speak(text){
+  // Use Web Speech API
+  if(!('speechSynthesis' in window)) return;
+  const utter = new SpeechSynthesisUtterance();
+  utter.lang = 'en-US';
+  // prepend with "Jee"
+  utter.text = "Jee, " + text;
+  // tweak pitch/voice if available
+  utter.pitch = 1.05;
+  utter.rate = 0.95;
+  // find a female-ish voice if present
+  const voices = speechSynthesis.getVoices();
+  if(voices && voices.length){
+    // prefer names like 'female' or 'Samantha' or 'Google'
+    const prefer = voices.find(v => /female|Samantha|Google|Zira|Voice/.test(v.name)) || voices[0];
+    utter.voice = prefer;
+  }
+  speechSynthesis.cancel(); // stop previous
+  speechSynthesis.speak(utter);
+}
+
+function showTask(num){
+  const action = actions[num];
+  const sample = pick(action.text);
+  taskTitle.textContent = action.title;
+  const playerName = nameInputs[currentPlayer].value || `Player ${currentPlayer+1}`;
+  taskText.innerHTML = `<strong>${playerName}</strong>, ${sample}`;
+  // voice announce
+  speak(`${playerName} rolled a ${num}. ${action.title.replace('❓','').replace('💪','').trim()}. ${sample}`);
+}
+
+// dice roll logic
+function triggerRoll(){
+  if(rolling) return;
+  rolling = true;
+  diceEl.classList.add('rolling');
+  diceEl.textContent = '';
+  rollBtn.disabled = true;
+
+  // small fake animation while rolling: show random digits quickly
+  let flicks = 12;
+  let flickInterval = setInterval(()=>{
+    diceEl.textContent = Math.floor(Math.random()*6)+1;
+    flicks--;
+    if(flicks<=0) clearInterval(flickInterval);
+  }, 60);
+
+  // after animation, set final number
+  setTimeout(()=>{
+    diceEl.classList.remove('rolling');
+    const num = Math.floor(Math.random()*6)+1;
+    diceEl.textContent = num;
+    showTask(num);
+    rolling = false;
+    rollBtn.disabled = false;
+    // after rolling, highlight turn indicator
+    document.getElementById(`p${currentPlayer}-turn`).textContent = 'Just rolled!';
+    // give player time — you can automatically shift after a delay or let them press Next.
+  }, 900);
+}
+
+// next turn logic
+function triggerNext(){
+  // optionally, ask to add points? we'll just move on
+  // advance player
+  currentPlayer = (currentPlayer+1) % 3;
+  refreshTurnIndicators();
+  taskTitle.textContent = "Ready for the next roll";
+  taskText.textContent = "Press Roll Dice when ready.";
+  // small audio cue via speech
+  speak((nameInputs[currentPlayer].value || `Player ${currentPlayer+1}`) + ", it's your turn.");
+}
+
+rollBtn.addEventListener('click', triggerRoll);
+nextBtn.addEventListener('click', triggerNext);
+
+// Simple way to add a point: clicking on a player's score increments it (you can change UX)
+scoreEls.forEach((el, idx)=>{
+  el.addEventListener('click', ()=>{
+    scores[idx] += 1;
+    el.textContent = scores[idx];
+  });
+});
+
+// long-press Reset: alt+R or double-click footer to reset scores
+window.addEventListener('keydown', (e)=>{
+  if(e.altKey && (e.key === 'r' || e.key === 'R')){
+    scores = [0,0,0];
+    scoreEls.forEach((s, i)=> s.textContent = 0);
+    taskTitle.textContent = "Scores reset";
+    taskText.textContent = "All scores are now zero.";
+    speak("Scores have been reset.");
+  }
+});
+
+// update name displays whenever changed
+setInterval(updateNames, 400);
+
+// initial greeting voice (triggered by user interaction in some browsers; if blocked it will fail silently)
+function greet(){
+  speak("Let's play Dice of Fate. Press Roll Dice to begin.");
+}
+document.addEventListener('click', function firstClick(){
+  greet();
+  document.removeEventListener('click', firstClick);
+});
+
+// Accessibility: focus roll button on load
+window.addEventListener('load', ()=>{ rollBtn.focus(); });
+
+</script>
